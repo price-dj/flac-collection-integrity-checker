@@ -61,6 +61,8 @@ def main(argv):
     percentage = None
     percentage_limit = None
 
+    # this following try/except appears to be processing command line input
+    # it outputs errors to log but not command line I believe
     try:
         init_logging()        
         LOG = logging.getLogger('IntegrityCheck')

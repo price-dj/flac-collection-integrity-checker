@@ -6,3 +6,5 @@
 /flac/__pycache__
 /*.spec
 /version-file.txt
+/.idea/
+/test_flac_files/

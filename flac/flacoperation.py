@@ -2,6 +2,7 @@ import logging
 import re
 import subprocess
 
+
 # https://xiph.org/flac/documentation_tools_metaflac.html
 # https://xiph.org/flac/documentation_tools_flac.html
 # https://github.com/xiph/flac/blob/9b3826006a3fc27b34d9297a9a8194accacc2c44/src/flac/main.c
@@ -64,8 +65,10 @@ class FlacOperation:
 
         return result
 
-
+    # This returns a bool. Whereas I'd like it to return the full breadth of OK, WARNING and ERROR.
+    # Then allow the user to specify level of notification required.
     def test(self):
+
         result = False
 
         cmd = [self.flac_path, '--test', self.file]
@@ -90,7 +93,7 @@ class FlacOperation:
                         self.log.critical("FLAC '*ok' not found")
                     else:
                         self.log.debug("FLAC verification succeed")
-                        result = True                          
+                        result = True
 
             else:
                 self.log.critical("FLAC output expected")
