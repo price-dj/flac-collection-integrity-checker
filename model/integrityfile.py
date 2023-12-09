@@ -7,12 +7,13 @@ from model.integrityentry import IntegrityEntry
 
 
 class IntegrityFile:
-
+    # modify this to include flac output message
     FIELD_NAMES = [
         IntegrityEntry.FILE_PATH,
         IntegrityEntry.FILE_SIZE,
         IntegrityEntry.FILE_MODTIME,
-        IntegrityEntry.DATE_CHECKED
+        IntegrityEntry.DATE_CHECKED,
+        IntegrityEntry.FLAC_MESSAGE
     ]
 
     def __init__(self, file_path=None):

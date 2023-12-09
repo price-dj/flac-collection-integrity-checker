@@ -74,12 +74,14 @@ class FlacOperation:
         cmd = [self.flac_path, '--test', self.file]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         (cmd_out, cmd_err) = process.communicate()
+
         if process.returncode != 0:
             cmd_err = cmd_err.strip()
             self.log.critical("FLAC exited with error code: %d", process.returncode)
             self.log.critical("STDOUT:\n%s\nSTDERR: %s", cmd_out, cmd_err)
         else:
             cmd_err = cmd_err.strip()
+
             if cmd_err is not None:
                 r = cmd_err.split("\n")
                 if r is None:
@@ -88,6 +90,7 @@ class FlacOperation:
                 else:
                     r = r[len(r) - 1]
                     m = re.match(r'.*ok', r)
+
                     if m is None:
                         self.log.critical(r)
                         self.log.critical("FLAC '*ok' not found")

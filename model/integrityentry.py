@@ -5,6 +5,7 @@ class IntegrityEntry:
     FILE_SIZE = "Size"
     FILE_MODTIME = "Mod-Time"
     DATE_CHECKED = "Last-Check"
+    FLAC_MESSAGE = "Flac-Message"   # added to include flac OK/WARNING/ERROR
 
     def __init__(self, data=None):
         self.data: dict = None
@@ -22,6 +23,7 @@ class IntegrityEntry:
             d[IntegrityEntry.FILE_SIZE] = None
             d[IntegrityEntry.FILE_MODTIME] = None
             d[IntegrityEntry.DATE_CHECKED] = None
+            d[IntegrityEntry.FLAC_MESSAGE] = None
             self.data = d
 
     def get_file_path(self):
@@ -47,3 +49,9 @@ class IntegrityEntry:
 
     def set_date_checked(self, value):
         self.data[self.DATE_CHECKED] = value
+
+    def get_flac_message(self):
+        return self.data[self.FLAC_MESSAGE]
+
+    def set_flac_message(self, value):
+        self.data[self.FLAC_MESSAGE] = value

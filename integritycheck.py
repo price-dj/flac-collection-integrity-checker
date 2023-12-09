@@ -12,8 +12,9 @@ from flac.flacoperation import FlacOperation
 
 
 DATE_FORMAT                 = "%Y-%m-%d %H:%M:%S.%f"
-DATE_UNDEFINED_VAL          = datetime(1900, 1, 1)
+DATE_UNDEFINED_VAL          = datetime(1990, 1, 1)
 DATE_UNDEFINED_VAL_STR      = DATE_UNDEFINED_VAL.strftime(DATE_FORMAT)
+FLAC_UNDEFINED_MESSAGE_VAL  = "No FLAC Message"
 
 EXIT_CODE_OK                =  0
 EXIT_CODE_ERR_OPTION        = -1
@@ -137,6 +138,8 @@ def get_integrity_entries(folder: str, report_file: str):
                     ieb.set_file_size(os.path.getsize(file_path))
                     ieb.set_file_modtime(os.path.getmtime(file_path))
                     ieb.set_date_checked(DATE_UNDEFINED_VAL_STR)
+                    ieb.set_flac_message(FLAC_UNDEFINED_MESSAGE_VAL)
+
 
                     ie_new = ieb
                     if ieb.get_file_path() in ier_dict:
@@ -223,9 +226,11 @@ def check(flac_path, folder, report_file, age, percentage, percentage_threshold)
                 if os.path.exists(file.get_file_path()):
                     flac_op = FlacOperation(flac_path, None, file.get_file_path())
                     LOG.warning("Verifying (" + nb_format.format(i + 1) + "/" + nb_format.format(limit) + " - " + "{0:6.2f}".format((i+1) / limit * 100) + "%): " + file.get_file_path())
+
                     if flac_op.test():
                         now = datetime.now().strftime(DATE_FORMAT)
                         file.set_date_checked(now)
+                        file.set_flac_message("this is the flac message")    # the flac message
                     else:
                         LOG.critical("KO")
                         sys.exit(EXIT_CODE_ERR_VALIDATION)
