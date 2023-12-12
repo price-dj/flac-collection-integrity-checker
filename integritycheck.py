@@ -227,10 +227,10 @@ def check(flac_path, folder, report_file, age, percentage, percentage_threshold)
                     flac_op = FlacOperation(flac_path, None, file.get_file_path())
                     LOG.warning("Verifying (" + nb_format.format(i + 1) + "/" + nb_format.format(limit) + " - " + "{0:6.2f}".format((i+1) / limit * 100) + "%): " + file.get_file_path())
 
-                    if flac_op.test():
+                    if flac_op.test[0]:   # get the first of tuple is bool
                         now = datetime.now().strftime(DATE_FORMAT)
                         file.set_date_checked(now)
-                        file.set_flac_message("this is the flac message")    # the flac message
+                        file.set_flac_message(flac_op.test[1])    # the flac message is second of tuple
                     else:
                         LOG.critical("KO")
                         sys.exit(EXIT_CODE_ERR_VALIDATION)
