@@ -103,26 +103,17 @@ class FlacOperation:
                     flac_message = 'ok'
 
                 # check for warning
-                if 'WARNING' in cmd_err:
+                if re.search(r'WARNING', str(cmd_err)):
                     self.log.warning("FLAC warning message")
-                    i = cmd_err.index('WARNING')
-                    flac_message = " ".join(cmd_err[i:])
+                    flac_message = " ".join(cmd_err)
                     result = True
 
                 # check for error
-                if 'ERROR' or '***' in cmd_err:
+                if re.search(r'ERROR', str(cmd_err)):
                     self.log.error("FLAC error message")
-                    if '***' in cmd_err:
-                        i = cmd_err.index('***')
-                        flac_message = " ".join(cmd_err[i:])
-
-                    elif 'ERROR' in cmd_err:
-                        i = cmd_err.index('ERROR')
-                        flac_message = " ".join(cmd_err[i:])
+                    flac_message = " ".join(cmd_err)
                     result = True
-                # elif m is None:
-                #     self.log.critical(r)
-                #     self.log.critical("FLAC '*ok' not found")
+
 
             else:
                 # pass

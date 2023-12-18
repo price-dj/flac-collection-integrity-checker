@@ -3,6 +3,7 @@ import getopt
 import logging
 import os
 import sys
+import shutil
 from datetime import datetime, timedelta
 
 from model.integrityentry import IntegrityEntry
@@ -38,10 +39,9 @@ def usage(argv_0, exit_val):
     print("FLAC Collection Integrity Checker\n")
 
     print("A python script to check FLAC integrity\n")
-    print("Usage: %s [-h  || --help] --flac <flac-path> --folder <folder-path> --report <report-path> [--age <number-minutes>] [--min-percentage <number-percentage> || --max-percentage <number-percentage>]" % argv_0)
-
+    print("Usage: %s [-h  || --help] [--flac <flac-path>] --folder <folder-path> --report <report-path> [--age <number-minutes>] [--min-percentage <number-percentage> || --max-percentage <number-percentage>]" % argv_0)
     print("\t-h / --help        : Shows this help")
-    print("\t--flac             : Path to the flac executable")    
+    print("\t--flac             : Path to the flac executable, if not found by this script")
     print("\t--folder           : Root folder path to FLAC collection for recursive files search")
     print("\t--report           : Path to the report file")
     print("\t--age              : Age in minutes to identify files to check")
@@ -62,31 +62,46 @@ def main(argv):
     percentage = None
     percentage_limit = None
 
+
+
     # this following try/except appears to be processing command line input
     # it outputs errors to log but not command line I believe
     try:
         init_logging()        
         LOG = logging.getLogger('IntegrityCheck')
 
-        opts, args = getopt.getopt(argv[1:], 'h', ['help', 'folder=', 'flac=', 'report=', 'age=', 'min-percentage=', 'max-percentage='])
+        opts, args = getopt.getopt(argv[1:], 'h', ['help', 'flac=', 'folder=', 'report=', 'age=', 'min-percentage=', 'max-percentage='])
+
+        if "--flac" not in opts:
+            flac_path = shutil.which("flac")
+            if flac_path is None:
+                LOG.error("no executable found for command 'flac', please repeat with the --flac option")
+            else:
+                LOG.info(f"path to executable 'flac': {flac_path}")
+
+        if "--folder" not in opts:
+            LOG.error("Root folder path to FLAC collection for recursive files search is required")
+            usage(argv[0], EXIT_CODE_OK)
+        elif "--report" not in opts:
+            LOG.error("Path to report file is required")
 
         for opt, arg in opts:
             if opt in ("-h", "--help"):
                 usage(argv[0], EXIT_CODE_OK)
             elif opt == "--folder":
                 folder = arg
-            elif opt == "--flac":
-                flac_path = arg
             elif opt == "--report":
                 report_file = arg
-            elif opt == "--age":
+            if opt == "--flac":
+                flac_path = arg
+            if opt == "--age":
                 try:
                     age = int(arg)
                 except:
                     LOG.warning("Option 'age' must be an integer")
                     LOG.warning("No value will be used for this option")
                     age = None
-            elif opt == "--min-percentage":
+            if opt == "--min-percentage":
                 try:
                     if (percentage_limit is not None):
                         LOG.error("A 'xxx-percentage' argument has already been provided")
