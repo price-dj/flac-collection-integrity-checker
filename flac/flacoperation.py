@@ -10,12 +10,13 @@ import os
 
 class FlacOperation:
 
-    def __init__(self, flac_path, metadata_path, file):
+    def __init__(self, flac_path, flac_options, metadata_path, file):
         self.log = logging.getLogger('FlacOperation')
 
         self.flac_path = flac_path
         self.metaflac_path = metadata_path
         self.file = file
+        self.options = flac_options
 
     def get_hash(self):
 
@@ -76,10 +77,9 @@ class FlacOperation:
         flac_message = None
         # ok, warning, or error
         flac_err_level = None
-        test_flags = []
-        test_flags.extend(['-t', '--decode-through-errors', '-s'])
-
-        cmd = [self.flac_path, *test_flags, self.file]
+        self.options = ['-st' if item == '-s' else item for item in self.options]
+        # self.log.critical(self.options)
+        cmd = [self.flac_path, *self.options, self.file]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         (cmd_out, cmd_err) = process.communicate()
 

@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 import shutil
+import re
 from datetime import datetime, timedelta
 
 from model.integrityentry import IntegrityEntry
@@ -39,11 +40,16 @@ def usage(argv_0, exit_val):
     print("FLAC Collection Integrity Checker\n")
 
     print("A python script to check FLAC integrity\n")
-    print("Usage: %s [-h  || --help] [--flac <flac-path>] --folder <folder-path> --report <report-path> [--age <number-minutes>] [--min-percentage <number-percentage> || --max-percentage <number-percentage>]" % argv_0)
+    print("Usage: %s [-h  || --help] [--flac <flac-path>] --folder <folder-path> --report <report-path> [-s || --silent] "
+          "[-F || --decode-through-errors] [--age <number-minutes>] [--min-percentage <number-percentage> || --max-percentage <number-percentage>]" % argv_0)
     print("\t-h / --help        : Shows this help")
     print("\t--flac             : Path to the flac executable, if not found by this script")
     print("\t--folder           : Root folder path to FLAC collection for recursive files search")
     print("\t--report           : Path to the report file")
+    print("\t-s / --silent      : Optional: Silent mode (do not write runtime encode/decode statistics to stderr)")
+    print("\t-F / --decode-through-errors      : Optional: By default flac stops decoding with an error "
+                                    "and removes the partially decoded file if it encounters a bitstream error. "
+                                    "With -F, errors are still printed but flac will continue decoding to completion.")
     print("\t--age              : Age in minutes to identify files to check")
     print("\t--min-percentage   : Minimum percentage of collection to check")
     print("\t--max-percentage   : Maximum percentage of collection to check")
@@ -61,8 +67,9 @@ def main(argv):
     age = None
     percentage = None
     percentage_limit = None
-
-
+    silent = None
+    force = None
+    flac_options = []
 
     # this following try/except appears to be processing command line input
     # it outputs errors to log but not command line I believe
@@ -70,30 +77,38 @@ def main(argv):
         init_logging()        
         LOG = logging.getLogger('IntegrityCheck')
 
-        opts, args = getopt.getopt(argv[1:], 'h', ['help', 'flac=', 'folder=', 'report=', 'age=', 'min-percentage=', 'max-percentage='])
+        opts, args = getopt.getopt(argv[1:], 'hsF',  ['flac=', 'folder=', 'report=', 'age=', 'min-percentage=', 'max-percentage='])
 
-        if "--flac" not in opts:
+        LOG.warning(opts)
+
+        if not re.search(r"--flac", str(opts)):
             flac_path = shutil.which("flac")
             if flac_path is None:
                 LOG.error("no executable found for command 'flac', please repeat with the --flac option")
             else:
                 LOG.info(f"path to executable 'flac': {flac_path}")
 
-        if "--folder" not in opts:
-            LOG.error("Root folder path to FLAC collection for recursive files search is required")
+        if not re.search("--folder", str(opts)):
+            LOG.error(f"Root folder path to FLAC collection for recursive files search is required: {opts}")
             usage(argv[0], EXIT_CODE_OK)
-        elif "--report" not in opts:
+        if not re.search("--report", str(opts)):
             LOG.error("Path to report file is required")
 
         for opt, arg in opts:
-            if opt in ("-h", "--help"):
+            if opt in ["-h", "-help"]:
                 usage(argv[0], EXIT_CODE_OK)
-            elif opt == "--folder":
+            if opt in ["-s", "--silent"]:
+                flac_options.append("-s")
+            if opt in ["-F", "--decode-through-errors"]:
+                force = "--decode-through-errors"
+                flac_options.append(force)
+            if opt == "--folder":
                 folder = arg
-            elif opt == "--report":
+            if opt == "--report":
                 report_file = arg
             if opt == "--flac":
                 flac_path = arg
+
             if opt == "--age":
                 try:
                     age = int(arg)
@@ -122,7 +137,8 @@ def main(argv):
                     LOG.warning("Option 'max-percentage' must be an integer")
                     LOG.warning("No value will be used for this option")
 
-        check(flac_path, folder, report_file, age, percentage, percentage_limit)
+        LOG.warning(flac_options)
+        check(flac_path, flac_options, folder, report_file, age, percentage, percentage_limit)
 
     except getopt.GetoptError as ex:
         usage(argv[0], EXIT_CODE_ERR_OPTION)
@@ -168,7 +184,7 @@ def get_integrity_entries(folder: str, report_file: str):
     return integrity_entries
 
 
-def check(flac_path, folder, report_file, age, percentage, percentage_threshold):
+def check(flac_path, flac_options, folder, report_file, age, percentage, percentage_threshold):
 
     LOG.error("BEG - Check")
 
@@ -239,7 +255,7 @@ def check(flac_path, folder, report_file, age, percentage, percentage_threshold)
         for file in integrity_entries:
             if (i < limit):
                 if os.path.exists(file.get_file_path()):
-                    flac_op = FlacOperation(flac_path, None, file.get_file_path())
+                    flac_op = FlacOperation(flac_path, flac_options=flac_options, metadata_path=None, file=file.get_file_path())
                     LOG.warning("Verifying (" + nb_format.format(i + 1) + "/" + nb_format.format(limit) + " - " + "{0:6.2f}".format((i+1) / limit * 100) + "%): " + file.get_file_path())
 
                     if flac_op.test[0]:   # get the first of tuple is bool
