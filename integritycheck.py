@@ -100,8 +100,7 @@ def main(argv):
             if opt in ["-s", "--silent"]:
                 flac_options.append("-s")
             if opt in ["-F", "--decode-through-errors"]:
-                force = "--decode-through-errors"
-                flac_options.append(force)
+                flac_options.append("-F")
             if opt == "--folder":
                 folder = arg
             if opt == "--report":

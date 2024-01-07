@@ -76,49 +76,88 @@ class FlacOperation:
         result = False
         flac_message = None
         # ok, warning, or error
-        flac_err_level = None
+        flac_err_levels = ['ok', 'WARNING', 'ERROR']
+        # check for silent and decode through errors
+
+        self.options.append('-t')
         self.options = ['-st' if item == '-s' else item for item in self.options]
         # self.log.critical(self.options)
         cmd = [self.flac_path, *self.options, self.file]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         (cmd_out, cmd_err) = process.communicate()
 
-        if process.returncode != 0:
-            # pass
-            cmd_err = cmd_err.strip()
-            self.log.critical("FLAC exited with error code: %d", process.returncode)
-            self.log.critical("STDOUT:\n%s\nSTDERR: %s", cmd_out, cmd_err)
+        # preprocess
+        filename = os.path.basename(self.file)
+        cmd_err = cmd_err.replace(filename, "").strip()
+        if cmd_err is not None:
+            cmd_err = re.split("\n| |,|\x08", cmd_err)
+            cmd_err = list(filter(None, cmd_err))
         else:
-            filename = os.path.basename(self.file)
-            cmd_err = cmd_err.replace(filename, "").strip()
+            self.log.critical(cmd_err)
+            self.log.critical("FLAC output not found")
 
-            if cmd_err is not None:
-                cmd_err = re.split("\n| |,|\x08", cmd_err)
-                cmd_err = list(filter(None, cmd_err))
+        # if decoding /testing through errors
+        if '-F' in self.options:
 
-                # if blank, ok
+            # if not silent check case when OK
+            if '-st' not in self.options:
+                results = []
+                for fel in flac_err_levels:
+                    results.append(self.check_file_flac_err_level(fel, cmd_err))
+
+                self.log.error(results)
+                flac_message = " ".join([x for x in results if x is not None])
+                result = True
+
+            elif '-st' in self.options:
                 if not cmd_err:
-                    self.log.warning("FLAC verification succeed")
                     result = True
+                    self.log.warning("FLAC verification succeeded")
                     flac_message = 'ok'
 
-                # check for warning
-                if re.search(r'WARNING', str(cmd_err)):
-                    self.log.warning("FLAC warning message")
-                    flac_message = " ".join(cmd_err)
+                else:
+                    results = []
+                    for fel in flac_err_levels:
+                        results.append(self.check_file_flac_err_level(fel, cmd_err))
+                    flac_message = " ".join([x for x in results if x is not None])
                     result = True
 
-                # check for error
-                if re.search(r'ERROR', str(cmd_err)):
-                    self.log.error("FLAC error message")
-                    flac_message = " ".join(cmd_err)
-                    result = True
-
+        elif '-st' in self.options:
+            if not cmd_err:
+                result = True
+                self.log.warning("FLAC verification succeed")
+                flac_message = 'ok'
 
             else:
-                # pass
-                self.log.error(cmd_err)
-                self.log.error("FLAC output not found")
-                self.log.error("FLAC output expected")
+                results = []
+                for fel in flac_err_levels:
+                    results.append(self.check_file_flac_err_level(fel, cmd_err))
+                flac_message = " ".join([x for x in results if x is not None])
+                result = True
+        elif process.returncode != 0:
+            self.log.critical("FLAC exited with error code: %d", process.returncode)
+            self.log.critical("STDOUT:\n%s\nSTDERR: %s", cmd_out, " ".join(cmd_err))
+        else:
+
+            if re.search(r'ok', str(cmd_err)):
+                self.log.warning("FLAC verification succeeded")
+                flac_message = get_flac_message('ok', cmd_err)
+                result = True
+            else:
+                self.log.critical("FLAC output expected")
 
         return result, flac_message
+
+    def check_file_flac_err_level(self, flac_err_level: str, cmd_err: list) -> str:
+        p = re.compile(flac_err_level)
+        if re.search(p, str(cmd_err)):
+            self.log.warning("FLAC %s message", flac_err_level)
+            return get_flac_message(flac_err_level, cmd_err)
+
+
+def get_flac_message(flac_err_level: str, flac_err_out: list) -> str:
+    p = re.compile(flac_err_level.lower())
+    index = [i for i, item in enumerate(flac_err_out) if re.search(p, str(item).lower())][0]
+    return " ".join(flac_err_out[index:])
+
+
