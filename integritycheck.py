@@ -1,4 +1,5 @@
 import bisect
+import gc
 import getopt
 import logging
 import os
@@ -6,6 +7,7 @@ import sys
 import shutil
 import re
 from datetime import datetime, timedelta
+import platform
 
 from model.integrityentry import IntegrityEntry
 from model.integrityfile import IntegrityFile
@@ -135,7 +137,11 @@ def main(argv):
                 except:
                     LOG.warning("Option 'max-percentage' must be an integer")
                     LOG.warning("No value will be used for this option")
-
+        # if platform.system() == 'Windows':
+        #     # import win32file
+        #     # win32file._setmaxstdio(4096)
+        #     folder = '"\\"?"\"' + folder
+        #     report_file = '"\\"?"\"' + report_file
         LOG.warning(flac_options)
         check(flac_path, flac_options, folder, report_file, age, percentage, percentage_limit)
 
@@ -268,6 +274,7 @@ def check(flac_path, flac_options, folder, report_file, age, percentage, percent
                 i = i + 1
                 if i % limit_auto_save == 0:
                     IntegrityFile.write_integrity_entries(integrity_entries, report_file)
+                    gc.collect()
             else:
                 LOG.info("There are no more items satisfying 'age' or 'percentage' conditions")
                 break

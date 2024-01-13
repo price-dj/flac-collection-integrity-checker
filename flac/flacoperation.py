@@ -2,6 +2,7 @@ import logging
 import re
 import subprocess
 import os
+import platform
 
 
 # https://xiph.org/flac/documentation_tools_metaflac.html
@@ -83,6 +84,7 @@ class FlacOperation:
         self.options = ['-st' if item == '-s' else item for item in self.options]
         # self.log.critical(self.options)
         cmd = [self.flac_path, *self.options, self.file]
+
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         (cmd_out, cmd_err) = process.communicate()
 
